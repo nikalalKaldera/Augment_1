@@ -140,16 +140,8 @@ def get_temporal_spectral(skes_data, sub_num):
 
 
 def inverse_fourier_transform(freq_spectrum, U):
-    # Combine magnitude and phase components to get complex Fourier coefficients
-    # for index in tqdm(range(50)):
-    # complex_coeffs = magnitude * np.exp(1j * phase)
-    #temporal IFFT
     data_augemented = []
     freq_spec = np.array(freq_spectrum)
-    # spatial_spectral = np.fft.ifft(freq_spectrum, axis=-1).real
-    # checl_shape = spatial_spectral.shape[0]
-    # check_spa_spectral = spatial_spectral[0][0]
-    # spatial_spectral = spatial_spectral.transpose(0, 1, 3, 2)
     for i in range(freq_spec.shape[0]):
         inter_aug = []
         for c in range(3):
@@ -158,11 +150,6 @@ def inverse_fourier_transform(freq_spectrum, U):
             inter_aug.append(coordinates)
         data_augemented.append(inter_aug)
     result_aug = np.array(data_augemented)
-    #spectral_dict_1['ax_{:d}'.format(c)].append(np.dot(Q.T, data[c - 1, t]))
-    # data_numpy = data_numpy.transpose(1, 2, 3, 0)
-    # is_equal = np.array_equal(np.round(nppp[0], decimals=1), np.round(data_numpy, decimals=1))
-    # diff = np.round(nppp[0], decimals=1) - np.round(data_numpy, decimals=1)
-    shape_2 = result_aug.shape
     return result_aug
 
 
@@ -316,12 +303,6 @@ if __name__ == '__main__':
     mix = cross_mix_amplitude_phase(resultant_array_mag, resultant_array_phase, 1)
     raw_data_check = np.array(check_data_np)
     ift_ = inverse_fourier_transform(mix, Q)
-
-    # with open('Magnitude_GFT.pkl', 'wb') as f:
-    #     pickle.dump(resultant_array_mag, f)
-    #
-    # with open('Phase_GFT.pkl', 'wb') as f:
-    #     pickle.dump(resultant_array_phase, f)
 
     with open('Augmented_sequence.pkl', 'wb') as f:
         pickle.dump(ift_, f)
