@@ -10,12 +10,12 @@ from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description='Visualization NTU RGB+D')
 parser.add_argument('--extention', default='.pkl', choices=['.pkl', '.npz'])
-# parser.add_argument('--datapath', default='C:/Users/ntkkh958/Desktop/My '
-#                                           'Works/Data_agugmentation/Codes/Dataset/NTU60_CS.npz')
+# parser.add_argument('--datapath', default='/home/ntkkh958/My_work/Codes/InfoGCN/infogcn/data/ntu/NTU60_CS.npz')
 # parser.add_argument('--datapath', default='./Skeleton_Normalise.pkl')
 parser.add_argument('--datapath', default='./Augmented_sequence.pkl')
+# parser.add_argument('--datapath', default='./Skeleton_Normalise.pkl')
 
-parser.add_argument('--vis', default='2D', choices=['2D', '3D'])
+parser.add_argument('--vis', default='3D', choices=['2D', '3D'])
 parser.add_argument('--skel_no', default=0)
 parser.add_argument('--save_directory', default='/home/ntkkh958/My_work/Codes/GFT/output_file/')
 
@@ -97,7 +97,7 @@ class Draw3DSkeleton(object):
 
         # print(self.xyz.shape)
 
-        data = np.transpose(self.file, (1, 2, 0))
+        data = np.transpose(self.file, (1, 2, 0))   #input shape: C T V output: T V C
         print('data = ', data.shape)
         # data rotation
         if (self.x_rotation is not None) or (self.y_rotation is not None):
@@ -181,7 +181,10 @@ if __name__ == '__main__':
             data = np.array(pickle.load(file))  # N, C, T,V
             # data = data.transpose(0, 4, 2, 3, 1) #C, T, V
     # print(data.shape)
-    data = data[arg.skel_no]
+    # data = data[arg.skel_no][0].transpose(2, 1, 0)
     # print(data.shape)
+    data = data[arg.skel_no]
+    # new_dat = data[:, :, :, 0]
+    # sk = Draw3DSkeleton(data[:, :, :, 0], arg.save_directory)
     sk = Draw3DSkeleton(data, arg.save_directory)
     sk.visual_skeleton()

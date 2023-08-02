@@ -8,10 +8,14 @@ from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description='Frequency analysise')
 
-parser.add_argument('-p', '--datapath', default='/home/ntkkh958/My_work/Codes/InfoGCN/infogcn/data/ntu/NTU60_CS.npz',
+# parser.add_argument('-p', '--datapath', default='/home/ntkkh958/My_work/Codes/InfoGCN/infogcn/data/ntu/NTU60_CS.npz',
+#                     help='location of dataset npz file')
+parser.add_argument('-p', '--datapath', default='./Skeleton_Normalise.pkl',
                     help='location of dataset npz file')
-parser.add_argument('--extention', default='.npz', choices=['.pkl', '.npz'])
-
+parser.add_argument('-l', '--labelpath', default='./label.pkl',
+                    help='location of dataset npz file')
+parser.add_argument('--extention', default='.pkl', choices=['.pkl', '.npz'])
+# parser.add_argument('--extention', default='.npz', choices=['.pkl', '.npz'])
 parser.add_argument('-d', '--dataset',
                     choices=['NTU60 CS', 'NTU60 CV', 'NTU120_CSet', 'NTU120_CSub', 'HDM05'],
                     default='NTU60 CS')
@@ -86,7 +90,7 @@ def get_spatial_spectral(skes_data, sub_num, Q):
         data = np.copy(skes_data)
         for t in range(data.shape[1]):
             for c in range(1, 4):
-                check = T
+                # check = T
                 check_QT = Q.T
                 check_data = data[c - 1, t]
                 spectral_dict_1['ax_{:d}'.format(c)].append(np.dot(Q.T, data[c - 1, t]))
@@ -172,7 +176,8 @@ def cross_mix_amplitude_phase(skeleton_magnitude, skeleton_phase, x):
 
     for _ in range(x):
         # Randomly select two different samples (N) to cross-mix
-        sample_idx1, sample_idx2 = 1, 1
+        # sample_idx1, sample_idx2 = 29, 29
+        sample_idx1, sample_idx2 = 0, 0    # 0
 
         # Extract magnitude and phase for the selected samples
         magnitude_sample1 = skeleton_magnitude[sample_idx1]
@@ -202,7 +207,9 @@ if __name__ == '__main__':
     else:
         with open(arg.datapath, 'rb') as file:
             data = np.array(pickle.load(file))
-            data = data.transpose(0, 4, 2, 3, 1)
+        with open(arg.labelpath, 'rb') as file1:
+            label = np.array(pickle.load(file1))
+            # data = data.transpose(0, 4, 2, 3, 1)
 
     if arg.dataset[:3] == 'NTU':
         bone_pairs = ntu_skeleton_bone_pairs
@@ -222,6 +229,13 @@ if __name__ == '__main__':
     spatial_temporal_phase = dict()
     spatial_temporal_amp = dict()
     spatial_temporal_amp_dict = dict()
+    st_mag1 = []
+    st_mag2 = []
+    st_mag3 = []
+    st_phase1 = []
+    st_phase2 = []
+    st_phase3 = []
+    crop_data = []
     resultant_array_mag = np.zeros((50, data.shape[1], data.shape[3], window_size))
     resultant_array_phase = np.zeros((50, data.shape[1], data.shape[3], window_size))
     check_data_np = []
@@ -234,28 +248,29 @@ if __name__ == '__main__':
         spatial_temporal_dict['ax_{:d}'.format(c)] = 0.0
         spatial_temporal_phase_dict['ax_{:d}'.format(c)] = 0.0
 
-    for index in tqdm(range(50)):
-        data_numpy = data[index]    #Get the data_numpy for the current index.
-        valid_frame_num = np.sum(data_numpy.sum(0).sum(-1).sum(-1) != 0)    #Compute the valid_frame_num based on the non-zero values in data_numpy.
-        data_numpy = valid_crop_resize(data_numpy, valid_frame_num, p_interval, window_size)    #Call the valid_crop_resize function to crop and resize the data.
+    for index in tqdm(range(data.shape[0])):
+        data_numpy = data[index]    #data: N, C, T, V, M  Get the data_numpy for the current index.
+        # valid_frame_num = np.sum(data_numpy.sum(0).sum(-1).sum(-1) != 0)    #Compute the valid_frame_num based on the non-zero values in data_numpy.
+        # data_numpy = valid_crop_resize(data_numpy, valid_frame_num, p_interval, window_size)    #Call the valid_crop_resize function to crop and resize the data.
 
         C, T, V, M = data_numpy.shape
         data_numpy = data_numpy.transpose(3, 0, 1, 2).reshape(M, C, T, V)   #Reshape and transpose the data_numpy array.
         check_data_np.append(data_numpy[0])
         if (data_numpy[1] == np.zeros((C, T, V), np.float32)).all():    #Check if the second element in data_numpy is all zeros to determine the number of subjects.
-            num_sub += 1    #If there is only one subject, compute the spatial, temporal, and spatial-temporal spectral features.
+            num_sub = 1    #If there is only one subject, compute the spatial, temporal, and spatial-temporal spectral features.
             spatial_spectral = get_spatial_spectral(skes_data=data_numpy[0], sub_num=1, Q=Q)
             spatial_temporal_spectral = get_temporal_spectral(skes_data=np.stack(spatial_spectral.values()), sub_num=1)
 
             for c in range(1, 4):   #Compute the absolute values of the spectral features.
                 spatial_temporal_phase['ax_{:d}'.format(c)] = np.angle(spatial_temporal_spectral['ax_{:d}'.format(c)])
-                # spatial_temporal_amp['ax_{:d}'.format(c)] = np.abs(spatial_temporal_spectral['ax_{:d}'.format(c)])
+                # spatial_temporal_amp['ax_{:d}'.format(c)] = np.abs(spatial_temporal_spectral['ax_{:d}'.format(c)]) #
+                # s_t_spectrum = spatial_temporal_spectral
                 spatial_temporal_spectral['ax_{:d}'.format(c)] = np.abs(spatial_temporal_spectral['ax_{:d}'.format(c)])
                 # check_invfft = test_fft_inv(spatial_temporal_amp['ax_{:d}'.format(c)],
-                #                                          spatial_temporal_phase['ax_{:d}'.format(c)], Q, data_numpy[0])
+                #                                          spatial_temporal_phase['ax_{:d}'.format(c)], Q, data_numpy[0])#
 
         else:
-            num_sub += 2
+            num_sub = 2
             spatial_spectral_2 = get_spatial_spectral(skes_data=data_numpy, sub_num=2, Q=Q)
             input_spatial_spectral = list()
             for m in range(2):
@@ -278,34 +293,46 @@ if __name__ == '__main__':
                     spatial_temporal_spectral_2[1]['ax_{:d}'.format(c)])
 
 
-        for k in spatial_dict.keys():   #Update the spatial, temporal, and spatial-temporal dictionaries with the computed spectral features.
-            spatial_dict[k] += spatial_spectral[k]
-            spatial_temporal_dict[k] += spatial_temporal_spectral[k]
-            spatial_temporal_phase_dict[k] += spatial_temporal_phase[k]
+        # for k in spatial_dict.keys():   #Update the spatial, temporal, and spatial-temporal dictionaries with the computed spectral features.
+        #     spatial_dict[k] += spatial_spectral[k]
+        #     spatial_temporal_dict[k] += spatial_temporal_spectral[k]
+        #     spatial_temporal_phase_dict[k] += spatial_temporal_phase[k]
 
         for k in spatial_dict.keys():  # Normalize the computed spectral features by dividing them by num_sub.
-            spatial_dict[k] /= num_sub
-            spatial_temporal_dict[k] /= num_sub
-            spatial_temporal_phase_dict[k] /= num_sub
+            # spatial_dict[k] = spatial_spectral[k]/num_sub
+            spatial_temporal_dict[k] = spatial_temporal_spectral[k]/num_sub
+            spatial_temporal_phase_dict[k] = spatial_temporal_phase[k]/num_sub
 
-        st_mag1 = spatial_temporal_dict['ax_1']
-        st_mag2 = spatial_temporal_dict['ax_2']
-        st_mag3 = spatial_temporal_dict['ax_3']
-        st_mag_array = np.array([st_mag1, st_mag2, st_mag3])
-        resultant_array_mag[index] = st_mag_array       # N, C, V, T
+        # for k in spatial_dict.keys():  # Normalize the computed spectral features by dividing them by num_sub.
+        #     spatial_dict[k] /= num_sub
+        #     spatial_temporal_dict[k] /= num_sub
+        #     spatial_temporal_phase_dict[k] /= num_sub
 
-        st_phase1 = spatial_temporal_phase_dict['ax_1']
-        st_phase2 = spatial_temporal_phase_dict['ax_2']
-        st_phase3 = spatial_temporal_phase_dict['ax_3']
-        st_phase_array = np.array([st_phase1, st_phase2, st_phase3])
-        resultant_array_phase[index] = st_phase_array  # N, C, V, T
+        st_mag1.append(spatial_temporal_dict['ax_1'])
+        st_mag2.append(spatial_temporal_dict['ax_2'])
+        st_mag3.append(spatial_temporal_dict['ax_3'])
 
-    mix = cross_mix_amplitude_phase(resultant_array_mag, resultant_array_phase, 1)
+        st_phase1.append(spatial_temporal_phase_dict['ax_1'])
+        st_phase2.append(spatial_temporal_phase_dict['ax_2'])
+        st_phase3.append(spatial_temporal_phase_dict['ax_3'])
+        crop_data.append(data_numpy)
+    check_121 = crop_data[10]
+    check_invfft = test_fft_inv(st_mag1[10], st_phase1[10], Q, crop_data[10])#
+
+    st_mag_array = np.array([st_mag1, st_mag2, st_mag3])    # C, N, V, T
+    st_mag_array_new = st_mag_array.transpose(1, 0, 2, 3)
+    # resultant_array_mag[index] = st_mag_array       # N, C, V, T
+
+    st_phase_array = np.array([st_phase1, st_phase2, st_phase3])
+    st_phase_array_new = st_phase_array.transpose(1, 0, 2, 3)
+    # resultant_array_phase[index] = st_phase_array  # N, C, V, T
+
+    mix = cross_mix_amplitude_phase(st_mag_array_new, st_phase_array_new, 1)
     raw_data_check = np.array(check_data_np)
     ift_ = inverse_fourier_transform(mix, Q)
 
     with open('Augmented_sequence.pkl', 'wb') as f:
         pickle.dump(ift_, f)
 
-    with open('Raw_data.pkl', 'wb') as f:
-        pickle.dump(raw_data_check, f)
+    # with open('Raw_data.pkl', 'wb') as f:
+    #     pickle.dump(raw_data_check, f)
